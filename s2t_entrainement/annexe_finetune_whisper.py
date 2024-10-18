@@ -7,6 +7,10 @@ fichier annexe du programme d'entrainement principal finetune_whisper.py
 :WARNING: ne pas oublier de se connecter au compte hugging-face pour download le dataset
 """
 
+from dataclasses import dataclass
+from typing import Any, Dict, List, Union
+from functools import partial
+import torch
 
 def prepare_dataset(batch):
     """
