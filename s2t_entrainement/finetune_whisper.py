@@ -58,6 +58,7 @@ print("[SUCCESS] Téléchargement du dataset réussi!")
 
 
 # pré-traitement du dataset
+print("[INFO] Préparation du dataset")
 common_voice = common_voice.select_columns(["audio", "sentence"])   # la BDD rassemble d'autres caractéristiques comme l'age, le genre, l'accent etc. cela ne nous interesse pas.
 # on décide d'utiliser le modèle préentrainé whisper-small 3e sur les 6 proposés (en terme de taille). Le modèle contient 244M de paramètres
 processor = WhisperProcessor.from_pretrained(
@@ -80,15 +81,16 @@ common_voice = common_voice.map(
 # l'arg num_proc permet d'appliquer la fonction prepare_dataset en multiprocessing (ici en utilisant 2 coeur de proco/gpu)
 # ATTENTION, visiblement ca peut merder entre linux et windows, cf https://discuss.huggingface.co/t/map-multiprocessing-issue/4085/12?page=2
 
-
+print("[INFO] Définition de la métrique d'évaluation")
 # mise des données sous forme de batch (pour l'entrainement)
 data_collator = annexe.DataCollatorSpeechSeq2SeqWithPadding(processor=processor)   # et on initialise le data collator que l'on vient de définir
 # la métrique Word Error Rate WER est utilisée (c'est celle qui est utilisée communément pour les problèmes de reconnaissance vocale)
 metric = evaluate.load("wer")
 
+print("[INFO] Téléchargement du modèle OpenAi")
 # et là, on télécharge le modèle RN pré-entrainé
 model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small")     # on dl la version small (à changer potentiellement, dans tous les cas, c'est ce qui est communément utilisé)
-
+print("[SUCCESS] Modèle OpenAI Téléchargé")
 
 # disable cache during training since it's incompatible with gradient checkpointing
 model.config.use_cache = False
@@ -99,6 +101,7 @@ model.generate = partial(
 )   # ici, on indique au modèle qu'il parle francais, et qu'il doit faire du speech-to-text + qu'il a le droit d'utiliser la mémoire cache
 # est equivalent à model.generation_config.task = "transcribe" (pr la partie transcribe)
 
+print("[INFO] Définition des paramètres d'entrainement")
 training_args = Seq2SeqTrainingArguments(
     output_dir="./whisper-small-fr",  # name on the HF Hub
     per_device_train_batch_size=16,
@@ -137,4 +140,6 @@ trainer = Seq2SeqTrainer(
 )
 
 
+print("[INFO] Entrainement lancé")
 trainer.train()     # et on lance l'entrainement!!!
+print("[DONE] Entrainement terminé, programme terminé")
