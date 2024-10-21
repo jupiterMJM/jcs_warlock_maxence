@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Union
 from functools import partial
 import torch
 
-def prepare_dataset(batch):
+def prepare_dataset(batch, processor):
     """
     Now we can write a function that takes a single training sample and passes it through the processor to prepare it for our model.
     source: https://huggingface.co/blog/audio-datasets

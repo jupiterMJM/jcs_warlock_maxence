@@ -5,6 +5,7 @@ Finetune du modèle whisper OpenAI pour de meilleures performances en français
 :projet: JCS_warlock
 :commentaire: fichier à utiliser pour entrainement sur machine distante
 :WARNING: ne pas oublier de se connecter au compte hugging-face pour download le dataset
+TODO mieux gérer le download et la sauvegarde des données audio!!!!
 """
 
 
@@ -64,8 +65,9 @@ print("[SUCCESS] Téléchargement du dataset réussi!")
 
 # enregistrement des données sur le disque dur pour usage postérieur
 print("[INFO] Sauvegarde du dataset")
-common_voice["train"].save_to_disk("./dataset_mz_foundation")
-common_voice["test"].save_to_disk("./dataset_mz_foundation")
+if False:   # si on a déjà les données
+    dataset_train.save_to_disk("./dataset_mz_foundation/train_dataset")
+    dataset_test.save_to_disk("./dataset_mz_foundation/test_dataset")
 print("[SUCCESS] Dataset sauvegardé!!!")
 
 print("[INFO] Génération du dataset")
@@ -92,8 +94,10 @@ common_voice.cleanup_cache_files()      # a quoi ca sert? jsp, pr clean des pote
 
 
 common_voice = common_voice.map(
-    annexe.prepare_dataset, remove_columns=common_voice.column_names["train"], num_proc=2
+    lambda x: annexe.prepare_dataset(x, processor), remove_columns=common_voice.column_names["train"]
 )
+# Attention: le num_proc merde sous Linux je crois
+
 # https://huggingface.co/docs/datasets/process
 # l'arg num_proc permet d'appliquer la fonction prepare_dataset en multiprocessing (ici en utilisant 2 coeur de proco/gpu)
 # ATTENTION, visiblement ca peut merder entre linux et windows, cf https://discuss.huggingface.co/t/map-multiprocessing-issue/4085/12?page=2
