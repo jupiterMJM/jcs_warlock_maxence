@@ -1,2 +1,3 @@
 maxence_env/
 *.pyc
+token_to_huggingface.txt

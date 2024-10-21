@@ -41,21 +41,38 @@ from functools import partial
 import annexe_finetune_whisper as annexe
 print("[SUCCESS] Importation des modules reussie")
 
+# connexion à Hugging-Face
+print("[INFO] Connexion à Hugging Face")
+from huggingface_hub import login
+with open("token_to_huggingface.txt") as file:
+    login(str(file.readline()))
+print("[SUCCESS] Connexion établie")
+
 # téléchargement du Dataset
 print("[INFO] Téléchargement du dataset")
-common_voice = DatasetDict()
-
 # téléchargement des données d'entrainement
 # le fr spécifie que l'on prend QUE des données en francais
-common_voice["train"] = load_dataset(
+dataset_train = load_dataset(
     "mozilla-foundation/common_voice_6_0", "fr", split="train+validation", trust_remote_code=True
 )
-common_voice["test"] = load_dataset(
+print("[INFO] Lancement du téléchargement du dataset de test")
+dataset_test = load_dataset(
     "mozilla-foundation/common_voice_6_0", "fr", split="test", trust_remote_code=True
 )
 print("[SUCCESS] Téléchargement du dataset réussi!")
 
 
+# enregistrement des données sur le disque dur pour usage postérieur
+print("[INFO] Sauvegarde du dataset")
+common_voice["train"].save_to_disk("./dataset_mz_foundation")
+common_voice["test"].save_to_disk("./dataset_mz_foundation")
+print("[SUCCESS] Dataset sauvegardé!!!")
+
+print("[INFO] Génération du dataset")
+common_voice = DatasetDict()
+common_voice["train"] = dataset_train
+common_voice["test"] = dataset_test
+print("[SUCCESS] Dataset généré!")
 
 # pré-traitement du dataset
 print("[INFO] Préparation du dataset")
@@ -140,6 +157,7 @@ trainer = Seq2SeqTrainer(
 )
 
 
-print("[INFO] Entrainement lancé")
-trainer.train()     # et on lance l'entrainement!!!
-print("[DONE] Entrainement terminé, programme terminé")
+if False:   # on ne voulait pas le lancer rn!
+    print("[INFO] Entrainement lancé")
+    trainer.train()     # et on lance l'entrainement!!!
+    print("[DONE] Entrainement terminé, programme terminé")
