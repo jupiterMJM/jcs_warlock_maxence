@@ -5,7 +5,7 @@ Finetune du modèle whisper OpenAI pour de meilleures performances en français
 :projet: JCS_warlock
 :commentaire: fichier à utiliser pour entrainement sur machine distante
 :WARNING: ne pas oublier de se connecter au compte hugging-face pour download le dataset
-TODO mieux gérer le download et la sauvegarde des données audio!!!!
+
 """
 
 
@@ -37,6 +37,7 @@ import evaluate
 from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 from functools import partial
+import os
 
 # importation des modules perso (surtout des fonctions)
 import annexe_finetune_whisper as annexe
@@ -51,30 +52,30 @@ print("[SUCCESS] Connexion établie")
 
 # téléchargement du Dataset
 print("[INFO] Téléchargement du dataset")
-# téléchargement des données d'entrainement
-# le fr spécifie que l'on prend QUE des données en francais
-dataset_train = load_dataset(
-    "mozilla-foundation/common_voice_6_0", "fr", split="train+validation", trust_remote_code=True
-)
-print("[INFO] Lancement du téléchargement du dataset de test")
-dataset_test = load_dataset(
-    "mozilla-foundation/common_voice_6_0", "fr", split="test", trust_remote_code=True
-)
-print("[SUCCESS] Téléchargement du dataset réussi!")
-
-
-# enregistrement des données sur le disque dur pour usage postérieur
-print("[INFO] Sauvegarde du dataset")
-if False:   # si on a déjà les données
-    dataset_train.save_to_disk("./dataset_mz_foundation/train_dataset")
-    dataset_test.save_to_disk("./dataset_mz_foundation/test_dataset")
-print("[SUCCESS] Dataset sauvegardé!!!")
+common_voice = DatasetDict()
+if os.path.exists("./dataset_mz_foundation/train_dataset"):
+    print("[INFO] Données d'entrainement déjà téléchargées")
+    common_voice["train"] = DatasetDict.load_from_disk("./dataset_mz_foundation/train_dataset")
+    common_voice["test"] = DatasetDict.load_from_disk("./dataset_mz_foundation/test_dataset")
+else:
+    # téléchargement des données d'entrainement
+    # le fr spécifie que l'on prend QUE des données en francais
+    common_voice["train"] = load_dataset(
+        "mozilla-foundation/common_voice_6_0", "fr", split="train+validation", trust_remote_code=True
+    )
+    print("[INFO] Lancement du téléchargement du dataset de test")
+    common_voice["test"] = load_dataset(
+        "mozilla-foundation/common_voice_6_0", "fr", split="test", trust_remote_code=True
+    )
+    print("[SUCCESS] Téléchargement du dataset réussi!")
+    # enregistrement des données sur le disque dur pour usage postérieur
+    print("[INFO] Sauvegarde du dataset")
+    common_voice["train"].save_to_disk("./dataset_mz_foundation/train_dataset")
+    common_voice["test"].save_to_disk("./dataset_mz_foundation/test_dataset")
+    print("[SUCCESS] Dataset sauvegardé!!!")
 
 print("[INFO] Génération du dataset")
-common_voice = DatasetDict()
-common_voice["train"] = dataset_train
-common_voice["test"] = dataset_test
-print("[SUCCESS] Dataset généré!")
+
 
 # pré-traitement du dataset
 print("[INFO] Préparation du dataset")
@@ -161,7 +162,7 @@ trainer = Seq2SeqTrainer(
 )
 
 
-if False:   # on ne voulait pas le lancer rn!
+if True:   # on ne voulait pas le lancer rn!
     print("[INFO] Entrainement lancé")
     trainer.train()     # et on lance l'entrainement!!!
     print("[DONE] Entrainement terminé, programme terminé")
