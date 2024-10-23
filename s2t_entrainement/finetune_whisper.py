@@ -5,7 +5,6 @@ Finetune du modèle whisper OpenAI pour de meilleures performances en français
 :projet: JCS_warlock
 :commentaire: fichier à utiliser pour entrainement sur machine distante
 :WARNING: ne pas oublier de se connecter au compte hugging-face pour download le dataset
-
 """
 
 
@@ -38,6 +37,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Union
 from functools import partial
 import os
+import multiprocessing
 
 # importation des modules perso (surtout des fonctions)
 import annexe_finetune_whisper as annexe
@@ -53,10 +53,9 @@ print("[SUCCESS] Connexion établie")
 # téléchargement du Dataset
 print("[INFO] Téléchargement du dataset")
 common_voice = DatasetDict()
-if os.path.exists("./dataset_mz_foundation/train_dataset"):
+if os.path.exists("./dataset_mz_foundation/dataset") and os.listdir("./dataset_mz_foundation/dataset"):
     print("[INFO] Données d'entrainement déjà téléchargées")
-    common_voice["train"] = DatasetDict.load_from_disk("./dataset_mz_foundation/train_dataset")
-    common_voice["test"] = DatasetDict.load_from_disk("./dataset_mz_foundation/test_dataset")
+    common_voice = DatasetDict.load_from_disk("./dataset_mz_foundation/dataset")
 else:
     # téléchargement des données d'entrainement
     # le fr spécifie que l'on prend QUE des données en francais
@@ -70,11 +69,9 @@ else:
     print("[SUCCESS] Téléchargement du dataset réussi!")
     # enregistrement des données sur le disque dur pour usage postérieur
     print("[INFO] Sauvegarde du dataset")
-    common_voice["train"].save_to_disk("./dataset_mz_foundation/train_dataset")
-    common_voice["test"].save_to_disk("./dataset_mz_foundation/test_dataset")
+    common_voice.save_to_disk("./dataset_mz_foundation/dataset")
     print("[SUCCESS] Dataset sauvegardé!!!")
 
-print("[INFO] Génération du dataset")
 
 
 # pré-traitement du dataset
@@ -94,10 +91,11 @@ common_voice = common_voice.cast_column("audio", Audio(sampling_rate=sampling_ra
 common_voice.cleanup_cache_files()      # a quoi ca sert? jsp, pr clean des potentiels fichiers en cache???? ca n'a pas l'air très important en tous cas
 
 
-common_voice = common_voice.map(
-    lambda x: annexe.prepare_dataset(x, processor), remove_columns=common_voice.column_names["train"]
-)
+
+
+common_voice = common_voice.map(lambda x: annexe.prepare_dataset(x, processor), remove_columns=common_voice.column_names["train"], num_proc = 1)
 # Attention: le num_proc merde sous Linux je crois
+# ATTENTION !!!!!!!! : la ligne .map écrit une qtt de données phénoménales sur le disque !!!!!!
 
 # https://huggingface.co/docs/datasets/process
 # l'arg num_proc permet d'appliquer la fonction prepare_dataset en multiprocessing (ici en utilisant 2 coeur de proco/gpu)
